@@ -28,7 +28,6 @@ from diffusion_policy.common.json_logger import JsonLogger
 from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from diffusion_policy.model.diffusion.ema_model import EMAModel
 from diffusion_policy.model.common.lr_scheduler import get_scheduler
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 OmegaConf.register_new_resolver("eval", eval, replace=True)
@@ -85,27 +84,18 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
         if cfg.training.use_ema:
             self.ema_model.set_normalizer(normalizer)
 
-        if cfg.training.lr_scheduler == "ReduceLROnPlateau":
-            lr_scheduler = ReduceLROnPlateau(
-                self.optimizer,
-                mode='max',                 # 因为 monitor_key: test_mean_score 越大越好
-                factor=0.5,                 # 每次降到一半
-                patience=4,                # 连续 5*4=20 个 epoch 不提升就降
-                verbose=True
-            )
-        else:
-            # configure lr scheduler
-            lr_scheduler = get_scheduler(
-                cfg.training.lr_scheduler,
-                optimizer=self.optimizer,
-                num_warmup_steps=cfg.training.lr_warmup_steps,
-                num_training_steps=(
-                    len(train_dataloader) * cfg.training.num_epochs) \
-                        // cfg.training.gradient_accumulate_every,
-                # pytorch assumes stepping LRScheduler every epoch
-                # however huggingface diffusers steps it every batch
-                last_epoch=self.global_step-1
-            )
+        # configure lr scheduler
+        lr_scheduler = get_scheduler(
+            cfg.training.lr_scheduler,
+            optimizer=self.optimizer,
+            num_warmup_steps=cfg.training.lr_warmup_steps,
+            num_training_steps=(
+                len(train_dataloader) * cfg.training.num_epochs) \
+                    // cfg.training.gradient_accumulate_every,
+            # pytorch assumes stepping LRScheduler every epoch
+            # however huggingface diffusers steps it every batch
+            last_epoch=self.global_step-1
+        )
 
         # configure ema
         ema: EMAModel = None
@@ -182,9 +172,7 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
                         if self.global_step % cfg.training.gradient_accumulate_every == 0:
                             self.optimizer.step()
                             self.optimizer.zero_grad()
-                            if not isinstance(lr_scheduler, ReduceLROnPlateau):
-                                # 其他调度器（如 StepLR, CosineAnnealingLR 等）
-                                lr_scheduler.step() 
+                            lr_scheduler.step() 
                         
                         # update ema
                         if cfg.training.use_ema:
@@ -194,10 +182,7 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
                         raw_loss_cpu = raw_loss.item()
                         tepoch.set_postfix(loss=raw_loss_cpu, refresh=False)
                         train_losses.append(raw_loss_cpu)
-                        if isinstance(lr_scheduler, ReduceLROnPlateau):
-                            last_lr = self.optimizer.param_groups[0]['lr']
-                        else:
-                            last_lr = lr_scheduler.get_last_lr()[0]
+                        last_lr = lr_scheduler.get_last_lr()[0]
                         step_log = {
                             'train_loss': raw_loss_cpu,
                             'global_step': self.global_step,
@@ -232,11 +217,6 @@ class TrainDiffusionUnetHybridWorkspace(BaseWorkspace):
                     runner_log = env_runner.run(policy)
                     # log all
                     step_log.update(runner_log)
-                    if isinstance(lr_scheduler, ReduceLROnPlateau):
-                        # 从 runner_log 中获取 test_mean_score
-                        test_mean_score = float(runner_log.get("test/mean_score", None))
-                        # 需要传入指标值
-                        lr_scheduler.step(test_mean_score)
 
                 # run validation
                 if (self.epoch % cfg.training.val_every) == 0:

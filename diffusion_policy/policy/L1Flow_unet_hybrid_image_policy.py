@@ -26,13 +26,17 @@ from equi_diffpo.common.pytorch_util import dict_apply, replace_submodules
 from equi_diffpo.model.vision.rot_randomizer import RotRandomizer
 
 
-class FlowUnetL1SampleHybridImagePolicy(BaseImagePolicy):
+class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
     def __init__(self, 
             shape_meta: dict,
             horizon, 
             n_action_steps, 
             n_obs_steps,
-            num_inference_steps=None,
+            infer_strategy="L1Flow",
+            num_inference_steps=2,
+            loss_type = 'l1',
+            loss_space = 'sample',
+            timestep_sampler_type = 'mixed',
             obs_as_global_cond=True,
             crop_shape=(76, 76),
             diffusion_step_embed_dim=256,
@@ -175,50 +179,53 @@ class FlowUnetL1SampleHybridImagePolicy(BaseImagePolicy):
         self.rot_aug = rot_aug
         self.kwargs = kwargs
 
+        # num_inference_steps: Number of denoising steps during inference.
 
-        # num_inference_steps 参数无用
+        # infer_strategy: Inference strategy to use.
+        #   - Options: "L1Flow" (recommended, use our proposed two-step inference strategy)
+        #           or "FM"(use the standard inference strategy in flow matching)
+        self.infer_strategy = infer_strategy
+
+        # num_inference_steps: Number of denoising steps during inference.
+        #   - Default is 2.
+        #   - Values > 1 are currently unused (no effect).
+        #   - Values < 1 are interpreted as `t_first`, controlling the first timestep size.
         self.num_inference_steps = num_inference_steps
+        self.t_first = self.t_first
+        
+        # loss_type: Type of loss function.
+        #   - Options: "l1" (recommended) or "mse".
+        allowed_loss_type = {"l1", "mse"}
+        if loss_type not in allowed_loss_type:
+            raise ValueError(
+                f"loss_type must be one of {sorted(allowed_loss_type)}, "
+                f"but now got {loss_type!r}"
+            )
+        self.loss_type = loss_type
+
+        # loss_space: Target loss space for supervision.
+        #   - Options: "sample" (default) or "velocity".
+        allowed_loss_space = {"velocity", "sample"}
+        if loss_space not in allowed_loss_space:
+            raise ValueError(
+                f"loss_space must be one of {sorted(allowed_loss_space)}, "
+                f"but now got {loss_space!r}"
+            )
+        self.loss_space = loss_space
+
+        # timestep_sampler_type: timesteps sampling strategy
+        #   - Options: "uniform", "beta", or "mixed" (recommended for balanced coverage).
+        allowed_timestep_sampler_type = {"uniform", "beta", "mixed"}
+        if timestep_sampler_type not in allowed_timestep_sampler_type:
+            raise ValueError(
+                f"timestep_sampler_type must be one of {sorted(allowed_timestep_sampler_type)}, "
+                f"but now got {timestep_sampler_type!r}"
+            )
+        self.timestep_sampler_type = timestep_sampler_type
 
         print("Flow params: %e" % sum(p.numel() for p in self.model.parameters()))
         print("Vision params: %e" % sum(p.numel() for p in self.obs_encoder.parameters()))
     
-    # # ========= inference  ============
-    # def conditional_sample(self, 
-    #         condition_data, condition_mask,
-    #         local_cond=None, global_cond=None,
-    #         generator=None,
-    #         # keyword arguments to scheduler.step
-    #         **kwargs
-    #         ):
-    #     model = self.model
-
-    #     trajectory = torch.randn(
-    #         size=condition_data.shape, 
-    #         dtype=condition_data.dtype,
-    #         device=condition_data.device,
-    #         generator=generator)
-    
-    #     # set step values
-    #     dt = 1/self.num_inference_steps
-    #     t = torch.zeros(1, device=condition_data.device)
-        
-    #     for _ in range(self.num_inference_steps):
-    #         # 1. apply conditioning
-    #         trajectory[condition_mask] = condition_data[condition_mask]
-
-    #         # 2. predict model output
-    #         a_pred = model(trajectory, t, 
-    #             local_cond=local_cond, global_cond=global_cond)
-
-    #         # 3. compute previous image: x_t -> x_t+1
-    #         v_t = (a_pred - trajectory)/(1-t)
-    #         trajectory = trajectory + dt*v_t
-    #         t = t + dt
-        
-    #     # finally make sure conditioning is enforced
-    #     trajectory[condition_mask] = condition_data[condition_mask]        
-
-    #     return trajectory
     
     # ========= inference  ============
     def conditional_sample(self, 
@@ -235,51 +242,42 @@ class FlowUnetL1SampleHybridImagePolicy(BaseImagePolicy):
             dtype=condition_data.dtype,
             device=condition_data.device,
             generator=generator)
-    
-        # set step values
-        dt = 0.5
         t = torch.zeros(1, device=condition_data.device)
+
+        # use our proposed two-step inference strategy
+        if self.infer_strategy == "L1Flow":
+            dt = self.t_first
+            
+            # 1. first step: x_0 -> x_0.5
+            a_pred = model(x_t, t, 
+                local_cond=local_cond, global_cond=global_cond)
+            
+            # ODE integration: x_t -> x_{t + dt}
+            v_t = (a_pred - x_t)/(1-t)
+            x_t = x_t + dt*v_t
+            t = t + dt
         
-        # 2. predict model output
-        a_pred = model(x_t, t, 
-            local_cond=local_cond, global_cond=global_cond)
-        # 3. compute previous image: x_t -> x_t+dt
-        v_t = (a_pred - x_t)/(1-t)
-        x_t = x_t + dt*v_t
-        t = t + dt
+            # 2. second step: x_0.5 -> x_1
+            a_pred = model(x_t, t, 
+                local_cond=local_cond, global_cond=global_cond)   
+            
+            return a_pred
         
-        a_pred = model(x_t, t, 
-            local_cond=local_cond, global_cond=global_cond)   
-        
-        x_t = a_pred
+        # use the standard inference strategy in flow matching
+        elif self.infer_strategy == "FM":
+            dt = 1/self.num_inference_steps
+            
+            for i in range(self.num_inference_steps):
+                # predict model output
+                a_pred = model(x_t, t, 
+                    local_cond=local_cond, global_cond=global_cond)
+                v_t = (a_pred - x_t)/(1 - t + 1e-8)
 
-        return x_t
-    
-    # ========= inference  ============
-    # def conditional_sample(self, 
-    #         condition_data, condition_mask,
-    #         local_cond=None, global_cond=None,
-    #         generator=None,
-    #         # keyword arguments to scheduler.step
-    #         **kwargs
-    #         ):
-    #     model = self.model
+                # compute previous image: x_t -> x_t+dt
+                x_t = x_t + dt*v_t
+                t = t + dt
 
-    #     trajectory = torch.randn(
-    #         size=condition_data.shape, 
-    #         dtype=condition_data.dtype,
-    #         device=condition_data.device,
-    #         generator=generator)
-    
-    #     # set step values
-    #     t = torch.zeros(1, device=condition_data.device)
-    #     # 2. predict model output
-    #     a_pred = model(trajectory, t, 
-    #         local_cond=local_cond, global_cond=global_cond)        
-    #     trajectory = a_pred
-
-    #     return trajectory
-
+            return x_t 
 
     def predict_action(self, obs_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """
@@ -388,24 +386,20 @@ class FlowUnetL1SampleHybridImagePolicy(BaseImagePolicy):
         noise = torch.randn(trajectory.shape, device=trajectory.device)
         bsz = trajectory.shape[0]
         # Sample a random timestep for each image
-        
-        # uniform
-        # timesteps = torch.rand(
-        #     (bsz,), device=trajectory.device
-        # )
-        
-        # beta
-        # timesteps = (self.beta_dist.sample((bsz,))).to(trajectory.device)
-        
-        # Ori: logistic + uniform
-        # timesteps = self.logisticnormal_dist.sample((bsz,))[:,0].to(trajectory.device)
-        # uni_timesteps = torch.rand_like(timesteps)
-        # mask = torch.rand_like(uni_timesteps) < 0.01
-        # timesteps[mask] = uni_timesteps[mask]
-        
-        # Now: only uniform
-        timesteps = torch.rand((bsz,), device=trajectory.device)
-        
+
+        timesteps = None
+
+        if self.timestep_sampler_type == 'uniform':
+            timesteps = torch.rand((bsz,), device=trajectory.device)
+        elif self.timestep_sampler_type == 'beta':
+            timesteps = (self.beta_dist.sample((bsz,))).to(trajectory.device)
+        elif self.timestep_sampler_type == 'mixed':
+            # default: logistic + uniform, 
+            timesteps = self.logisticnormal_dist.sample((bsz,))[:,0].to(trajectory.device)
+            uni_timesteps = torch.rand_like(timesteps)
+            mask = torch.rand_like(uni_timesteps) < 0.01
+            timesteps[mask] = uni_timesteps[mask]
+            
         timesteps_expand = timesteps[...,None,None]
 
         # Add noise to the clean images according to the noise magnitude at each timestep
@@ -418,14 +412,32 @@ class FlowUnetL1SampleHybridImagePolicy(BaseImagePolicy):
         # apply conditioning
         noisy_trajectory[condition_mask] = cond_data[condition_mask]
         
-        # Predict the velocity
-        a_pred = self.model(noisy_trajectory, timesteps, 
-            local_cond=local_cond, global_cond=global_cond)
-        # loss_smooth = F.l1_loss(a_pred[:,1:]-a_pred[:,:-1], trajectory[:, 1:]-trajectory[:, :-1])
+        # Predict the x
+        a_pred = self.model(noisy_trajectory, timesteps,
+                            local_cond=local_cond, global_cond=global_cond)
+        loss = None
+
+        # use the v-loss
+        if self.loss_space == "velocity":
+            # Set denominator truncation to avoid numerical overflow
+            eps = 0.05
+            v_t = (a_pred - noisy_trajectory) / (1 - timesteps_expand).clamp(min=eps)  
+            # v_truth = trajectory - noise
+            v_truth = (trajectory - noisy_trajectory) / (1 - timesteps_expand).clamp(min=eps)  
+            if self.loss_type == "l1":
+                loss = F.l1_loss(v_t, v_truth, reduction='none')
+            elif self.loss_type == "mse":
+                loss = F.mse_loss(v_t, v_truth, reduction='none')
+
+        # use the x-loss
+        elif self.loss_space == "sample":
+            # Set denominator truncation to avoid numerical overflow 
+            if self.loss_type == "l1":
+                loss = F.l1_loss(a_pred, trajectory, reduction='none')
+            elif self.loss_type == "mse":
+                loss = F.mse_loss(a_pred, trajectory, reduction='none')
         
-        loss = F.l1_loss(a_pred, trajectory, reduction='none')
         loss = loss * loss_mask.type(loss.dtype)
         loss = reduce(loss, 'b ... -> b (...)', 'mean')
         loss = loss.mean()
-        # loss = loss+loss_smooth
         return loss
