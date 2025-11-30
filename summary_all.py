@@ -2,148 +2,130 @@ import re
 from pathlib import Path
 import numpy as np
 
-# 配置支持的任务列表（可扩展）
-TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_ph"]
+EXP_id = 2
 
-# 显示任务选项
-print("请选择任务:")
+# Configure supported tasks list
+TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_mh", "transport_ph"]
+
+# Display task options
+print("Select a task:")
 for i, task in enumerate(TASKS, start=1):
     print(f"  {i}. {task}")
 
-# 获取用户输入
+# Get user input
 try:
-    choice = int(input("请输入选项编号: ").strip())
+    choice = int(input("Enter option number: ").strip())
     if not (1 <= choice <= len(TASKS)):
         raise ValueError
     task_name = TASKS[choice - 1]
 except (ValueError, KeyboardInterrupt):
-    print("❌ 无效输入。请输入有效的编号。")
+    print("Invalid input. Please enter a valid number.")
     exit(1)
 
-# 正则表达式：匹配 run_数字 目录
-run_dir_pattern = re.compile(r'run_(\d+)$')
-# 正则表达式：匹配 checkpoint 文件名
-ckpt_pattern = re.compile(r'epoch=\d+-test_mean_score=([+-]?\d*\.?\d+)\.ckpt')
+# Regex pattern for checkpoint files
+ckpt_pattern = re.compile(r"epoch=\d+-test_mean_score=([+-]?\d*\.?\d+)\.ckpt")
 
-print(f"\n📊 正在分析任务: {task_name}\n")
+print(f"\n[INFO] Analyzing task: {task_name}\n")
 
-best_scores = []      # 每个有效 run 的最高分
-ckpt_info = []        # (score, short_path)
+# Determine base directories based on EXP_id
+if EXP_id is not None:
+    base_dirs = list(Path("results").glob(f"EXP{EXP_id}"))
+    if not base_dirs:
+        print(f"[WARN] No results/EXP{EXP_id} directory found.")
+        exit(1)
+else:
+    base_dirs = list(Path("results").glob("EXP*"))
+    if not base_dirs:
+        print("[WARN] No results/EXP* directories found.")
+        exit(1)
 
-# 扫描 data/outputs* 下的所有内容
-base_dirs = list(Path("data").glob("outputs*"))
+best_scores = []  # Store best scores for each run
+ckpt_info = []    # Store (score, relative_checkpoint_path) tuples
+seen_run_paths = set()  # Track processed runs (though not used in current logic)
 
-if not base_dirs:
-    print("❌ 未找到 data/outputs* 目录。")
-    exit(1)
-
-# 用于去重：每个 run 路径只处理一次（避免重复扫描）
-seen_run_paths = set()
-
+# Process each experiment directory
 for base_dir in sorted(base_dirs):
     if not base_dir.is_dir():
         continue
+
     task_dir = base_dir / task_name
     if not task_dir.exists():
         continue
-    
-    if "outputs22" not in str(task_dir):
-        continue
-    
-    # 递归查找所有 run_{y} 目录
+
+    # Recursively search for run directories
     for run_dir in task_dir.rglob("*"):
         if not run_dir.is_dir():
             continue
-        if not run_dir_pattern.match(run_dir.name):
-            continue
-        if str(run_dir) in seen_run_paths:
-            continue
-        seen_run_paths.add(str(run_dir))
 
         ckpt_dir = run_dir / "checkpoints"
         if not ckpt_dir.exists():
             continue
 
-        # 提取相对于 data/ 的路径用于过滤
+        # Get relative path for display
         try:
-            rel_path_str = str(run_dir.relative_to(Path("data")))
+            rel_path_str = str(run_dir.relative_to(Path("results")))
         except ValueError:
             rel_path_str = str(run_dir)
-
-        # 路径过滤逻辑
-        # if "rel" in rel_path_str:
-        #     continue
-        if "NFE_2" not in rel_path_str:
-            continue
-        
-        if "run_2" in rel_path_str:
-            continue
-        
-        # if "outputs13" not in rel_path_str or "flow_200" not in rel_path_str:
-        #     continue
 
         max_score = -np.inf
         best_ckpt_file = None
         found_any = False
 
+        # Scan checkpoint files
         for ckpt_file in ckpt_dir.glob("*.ckpt"):
             match = ckpt_pattern.search(ckpt_file.name)
-            if match:
-                try:
-                    score = float(match.group(1))
-                    found_any = True
-                    if score > max_score:
-                        max_score = score
-                        best_ckpt_file = ckpt_file
-                except ValueError:
-                    continue
-
-        if found_any and max_score > 0.7:
-            # 获取 checkpoint 相对于 data/ 的短路径
+            if not match:
+                continue
             try:
+                score = float(match.group(1))
+            except ValueError:
+                continue
+            found_any = True
+            if score > max_score:
+                max_score = score
+                best_ckpt_file = ckpt_file
+
+        # Record best checkpoint for this run
+        if found_any and best_ckpt_file is not None:
+            try:
+                # Create shortened path relative to 'data' directory
                 short_path = str(best_ckpt_file.relative_to(Path("data")))
             except ValueError:
                 short_path = str(best_ckpt_file)
-
             best_scores.append(max_score)
             ckpt_info.append((max_score, short_path))
-            print(f"  ✅ {rel_path_str}: {max_score:.3f}")
-        else:
-            status = f"最高分 {max_score:.3f}" if found_any else "无有效 ckpt"
-            # print(f"  ⚠️  {rel_path_str}: {status}（跳过）")
+            print(f"  OK {rel_path_str}: {max_score:.3f}")
 
-# 汇总结果
+# Summary statistics
 if not best_scores:
-    print("\n❌ 未找到任何有效的 checkpoint\n")
-    exit(0) 
+    print("\n[WARN] No valid checkpoints found.\n")
+    exit(0)
 
-# 转为 numpy 数组
 scores = np.array(best_scores)
-paths = np.array([p for _, p in ckpt_info])
+paths = np.array([path for _, path in ckpt_info])
 
-# 按分数降序排序
+# Sort results by score (descending)
 sorted_indices = np.argsort(-scores)
 sorted_scores = scores[sorted_indices]
 sorted_paths = paths[sorted_indices]
 
-# 全体统计
+# Calculate overall statistics
 mean_all = round(float(np.mean(scores)), 3)
 stderr_all = round(float(np.std(scores, ddof=1)) if len(scores) > 1 else 0.0, 3)
 
-# Top-K 统计
+# Calculate top-k statistics
 top_k = min(5, len(sorted_scores))
-top5_scores = sorted_scores[:top_k]
-mean_top5 = round(float(np.mean(top5_scores)), 3)
-stderr_top5 = round(float(np.std(top5_scores, ddof=1)) if len(top5_scores) > 1 else 0.0, 3)
+top_scores = sorted_scores[:top_k]
+mean_top = round(float(np.mean(top_scores)), 3)
+stderr_top = round(float(np.std(top_scores, ddof=1)) if len(top_scores) > 1 else 0.0, 3)
 
-# 输出
-print(f"\n✅ 共收集 {len(best_scores)} 个有效 run（分数 > 0.8，通过路径过滤）\n")
-
-print("📄 详细列表（按分数降序）:")
+# Display detailed results
+print(f"\nDetailed results (sorted by score):")
 for score, path in zip(sorted_scores, sorted_paths):
-    print(f"   {score:.3f} → {path}")
+    print(f"   {score:.3f} -> {path}")
 
-print(f"\n📈 全体平均值 ± 标准误差: {mean_all} ± {stderr_all}")
-print(f"🏆 Top-{top_k} 平均值 ± 标准误差: {mean_top5} ± {stderr_top5}\n")
+# Display summary statistics
+print(f"\nOverall mean ± std: {mean_all} ± {stderr_all}")
+print(f"Top-{top_k} mean ± std: {mean_top} ± {stderr_top}\n")
 
-print("✅ 分析完成！")
+print("Analysis complete for all tasks!")

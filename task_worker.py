@@ -15,6 +15,7 @@ from multiprocessing import Process, Queue
 import argparse
 import re
 import shutil
+from typing import Optional, Union  # <-- 新增：用于兼容旧版 Python 的类型注解
 
 
 # --- Interactive task selection ---
@@ -39,7 +40,7 @@ LOCKS_DIR = Path("locks") / TASK_FILE_PATH.stem
 LOCKS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def try_claim_task(line_idx: int) -> str | None:
+def try_claim_task(line_idx: int) -> Optional[str]:
     """Atomically claim a task by creating a lock file.
 
     Args:
@@ -63,7 +64,7 @@ def try_claim_task(line_idx: int) -> str | None:
         return None  # Already locked by another process/machine
 
 
-def mark_done(lock_path: str | None) -> None:
+def mark_done(lock_path: Optional[str]) -> None:
     """Rename `.locked` to `.done` to mark task completion (atomic on same FS)."""
     if not lock_path:
         return
@@ -75,7 +76,7 @@ def mark_done(lock_path: str | None) -> None:
         pass  # Ignore errors (e.g., file already removed)
 
 
-def has_successful_ckpt(ckpt_dir: Path | str, threshold: float = 0.7) -> bool:
+def has_successful_ckpt(ckpt_dir: Union[Path, str], threshold: float = 0.7) -> bool:
     """Check if a valid checkpoint exists with sufficient score.
 
     Filename pattern: `epoch=<int>-test_mean_score=<float>.ckpt`
@@ -225,7 +226,7 @@ def count_task_states() -> tuple[int, int, int, int]:
     return total, done_count, locked_count, pending_count
 
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description="Launch concurrent training workers.")
     parser.add_argument("num_gpus", type=int, help="Number of GPUs to utilize (e.g., 4)")
     args = parser.parse_args()
