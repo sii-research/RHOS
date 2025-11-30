@@ -31,21 +31,22 @@ class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
             horizon, 
             n_action_steps, 
             n_obs_steps,
-            infer_strategy="L1Flow",
-            num_inference_steps=2,
+            infer_strategy = "L1Flow",
+            num_inference_steps = 2,
+            t_first = 0.5,
             loss_type = 'l1',
             loss_space = 'sample',
             timestep_sampler_type = 'mixed',
-            obs_as_global_cond=True,
-            crop_shape=(76, 76),
-            diffusion_step_embed_dim=256,
-            down_dims=(256,512,1024),
-            kernel_size=5,
-            n_groups=8,
-            cond_predict_scale=True,
-            obs_encoder_group_norm=False,
-            eval_fixed_crop=False,
-            rot_aug=False,
+            obs_as_global_cond = True,
+            crop_shape = (76, 76),
+            diffusion_step_embed_dim = 256,
+            down_dims = (256,512,1024),
+            kernel_size = 5,
+            n_groups = 8,
+            cond_predict_scale = True,
+            obs_encoder_group_norm = False,
+            eval_fixed_crop = False,
+            rot_aug = False,
             # parameters passed to step
             **kwargs):
         super().__init__()
@@ -201,7 +202,7 @@ class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
         # t_first: Initial time point for the first inference step.
         #   - Only used in "L1Flow".
         #   - Recommended value: 0.5.
-        self.t_first = self.t_first
+        self.t_first = t_first
         
         # loss_type: Type of loss function.
         #   - Options: "l1" (recommended) or "mse".

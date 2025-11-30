@@ -63,9 +63,9 @@ for run_id in RUN_ids:
             f"policy.loss_type={GLOBAL_PARAMS['loss_type']}",
             f"policy.loss_space={GLOBAL_PARAMS['loss_space']}",
             f"policy.timestep_sampler_type={GLOBAL_PARAMS['timestep_sampler_type']}",
+            f"task.env_runner.n_test={GLOBAL_PARAMS['test_episodes']}",
             f"training.num_epochs={epoch}",
             f"optimizer.lr={lr}",
-            f"task.env_runner.n_test=100",
             f"policy._target_=diffusion_policy.policy.L1Flow_unet_hybrid_image_policy.L1FlowUnetHybridImagePolicy"
         ]
         
@@ -76,10 +76,10 @@ for run_id in RUN_ids:
             "output_dir": output_dir
         })
 
-Path("TASKS").mkdir(parents=True, exist_ok=True)
-with open(f"TASKS/EXP{EXP_id}.jsonl", "w") as f:
+EXP_file = f"EXP{EXP_id}.jsonl"
+
+with open(EXP_file, "w") as f:
     for t in task_list:
         f.write(json.dumps(t) + "\n")
 
-print(f"✅ Generated {len(task_list)} tasks for EXP{EXP_id}")
-print(f"✅ Task_list saved to: TASKS/EXP{EXP_id}.jsonl")
+print(f"✅ Generated {len(task_list)} tasks in TASKS/{EXP_file}")
