@@ -1,17 +1,14 @@
 bin
 logs
 wandb
-outputs
 data
-data_local
-.vscode
 _wandb
 locks
 media
-generate*
-TASKS*
-result
+results
 .history
+.vscode
+.codex
 *.log
 
 **/.DS_Store
