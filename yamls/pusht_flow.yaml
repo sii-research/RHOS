@@ -28,11 +28,11 @@ logging:
     group: null
     id: null
     mode: online
-    name: pusht25_NFE0.5_0
+    name: pusht
     project: pusht
     resume: true
     tags:
-        - train_diffusion_unet_hybrid
+        - train_flow_unet_hybrid
         - pusht_image
         - default
 multi_run:
@@ -41,7 +41,7 @@ multi_run:
 n_action_steps: 8
 n_latency_steps: 0
 n_obs_steps: 2
-name: train_diffusion_unet_hybrid
+name: train_flow_unet_hybrid
 obs_as_global_cond: true
 optimizer:
     _target_: torch.optim.AdamW
