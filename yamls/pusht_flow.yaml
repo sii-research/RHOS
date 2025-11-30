@@ -53,7 +53,7 @@ optimizer:
     weight_decay: 1.0e-06
 past_action_visible: false
 policy:
-    _target_: diffusion_policy.policy.flow_test_v_loss.FlowUnetL1SampleHybridImagePolicy
+    _target_: diffusion_policy.policy.L1Flow_unet_hybrid_image_policy.L1FlowUnetHybridImagePolicy
     cond_predict_scale: true
     crop_shape:
         - 84
@@ -64,6 +64,7 @@ policy:
         - 1024
         - 2048
     eval_fixed_crop: true
+    rot_aug: false
     horizon: 16
     kernel_size: 5
     n_action_steps: 8
@@ -79,25 +80,23 @@ policy:
         prediction_type: epsilon
         variance_type: fixed_small
 
-    #-------------------------------------------------------
+    #------------------------------------------------------------------------------
     # Configuration Options (adjust as needed):
-    #-------------------------------------------------------
+    #------------------------------------------------------------------------------
 
-    # infer_strategy: Inference strategy to use.
-    #   - Options: "L1Flow" (recommended, use our proposed two-step inference strategy)
-    #           or "FM"(use the standard inference strategy in flow matching)
-    infer_strategy: hybrid
+    # infer_strategy: Inference strategy.
+    #   - "L1Flow": (recommended) Our proposed two-step inference method.
+    #   - "FM":     Standard flow-matching inference, i.e., Euler integration over [0,1].
+    infer_strategy: L1Flow
 
-    # num_inference_steps: Number of denoising steps during inference.
-    #  - Default is 2.
-    #   - not used in our proposed "L1Flow" inference strategy.
-    #   - used in the standard "FM" inference strategy.
+    # num_inference_steps: Number of inference steps.
+    #   - Only effective for in `FM`.
+    #   - Ignored in "L1Flow", which uses a fixed two-step inference process.
     num_inference_steps: 2
 
-    # t_first: controlling the first timestep size.
-    #   -  recommand  0.5
-    #   - used in our proposed "L1Flow" inference strategy.
-    #   - not used in the standard "FM" inference strategy.
+    # t_first: Initial time point for the first inference step.
+    #   - Only used in "L1Flow".
+    #   - Recommended value: 0.5.
     t_first: 0.5
 
     # loss_type: Type of loss function.
@@ -111,7 +110,7 @@ policy:
     # timestep_sampler_type: Timesteps sampling strategy
     #   - Options: "uniform", "beta", or "mixed" (recommended for balanced coverage).
     timestep_sampler_type: mixed
-    #-------------------------------------------------------
+    #------------------------------------------------------------------------------
 
     obs_as_global_cond: true
     obs_encoder_group_norm: true

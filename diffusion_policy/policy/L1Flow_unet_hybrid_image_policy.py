@@ -3,15 +3,14 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import LogisticNormal
+from torch.distributions import LogisticNormal, Beta
 from einops import rearrange, reduce
-from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
 
-from equi_diffpo.model.common.normalizer import LinearNormalizer
-from equi_diffpo.policy.base_image_policy import BaseImagePolicy
-from equi_diffpo.model.diffusion.conditional_unet1d import ConditionalUnet1D
-from equi_diffpo.model.diffusion.mask_generator import LowdimMaskGenerator
-from equi_diffpo.common.robomimic_config_util import get_robomimic_config
+from diffusion_policy.model.common.normalizer import LinearNormalizer
+from diffusion_policy.policy.base_image_policy import BaseImagePolicy
+from diffusion_policy.model.diffusion.conditional_unet1d import ConditionalUnet1D
+from diffusion_policy.model.diffusion.mask_generator import LowdimMaskGenerator
+from diffusion_policy.common.robomimic_config_util import get_robomimic_config
 from robomimic.algo import algo_factory
 from robomimic.algo.algo import PolicyAlgo
 import robomimic.utils.obs_utils as ObsUtils
@@ -21,9 +20,9 @@ try:
         raise ImportError("CropRandomizer is not in robomimic.models.base_nets")
 except ImportError:
     import robomimic.models.obs_core as rmbn
-import equi_diffpo.model.vision.crop_randomizer as dmvc
-from equi_diffpo.common.pytorch_util import dict_apply, replace_submodules
-from equi_diffpo.model.vision.rot_randomizer import RotRandomizer
+import diffusion_policy.model.vision.crop_randomizer as dmvc
+from diffusion_policy.common.pytorch_util import dict_apply, replace_submodules
+from diffusion_policy.model.vision.rot_randomizer import RotRandomizer
 
 
 class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
@@ -167,8 +166,8 @@ class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
         )
         self.normalizer = LinearNormalizer()
         self.rot_randomizer = RotRandomizer()
-        self.beta_dist = torch.distributions.beta.Beta(concentration1=1, concentration0=1.5)
-        self.logisticnormal_dist = torch.distributions.LogisticNormal(0,1)
+        self.beta_dist = Beta(concentration1=1, concentration0=1.5)
+        self.logisticnormal_dist = LogisticNormal(0, 1)
 
         self.horizon = horizon
         self.obs_feature_dim = obs_feature_dim
@@ -179,18 +178,29 @@ class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
         self.rot_aug = rot_aug
         self.kwargs = kwargs
 
-        # num_inference_steps: Number of denoising steps during inference.
+        #-----------------------------------------------------------------------------------------------
+        # Configuration Options for L1Flow Training and Inference
+        #-----------------------------------------------------------------------------------------------
 
-        # infer_strategy: Inference strategy to use.
-        #   - Options: "L1Flow" (recommended, use our proposed two-step inference strategy)
-        #           or "FM"(use the standard inference strategy in flow matching)
+        # infer_strategy: Inference strategy.
+        #   - "L1Flow": (recommended) Our proposed two-step inference method.
+        #   - "FM":     Standard flow-matching inference, i.e., Euler integration over [0,1].
+        allowed_infer_strategy = {"L1Flow", "FM"}
+        if infer_strategy not in allowed_infer_strategy:
+            raise ValueError(
+                f"infer_strategy must be one of {sorted(allowed_infer_strategy)}, "
+                f"but now got {infer_strategy!r}"
+            )
         self.infer_strategy = infer_strategy
 
-        # num_inference_steps: Number of denoising steps during inference.
-        #   - Default is 2.
-        #   - Values > 1 are currently unused (no effect).
-        #   - Values < 1 are interpreted as `t_first`, controlling the first timestep size.
+        # num_inference_steps: Number of inference steps.
+        #   - Only effective for in `FM`.
+        #   - Ignored in "L1Flow", which uses a fixed two-step inference process.
         self.num_inference_steps = num_inference_steps
+
+        # t_first: Initial time point for the first inference step.
+        #   - Only used in "L1Flow".
+        #   - Recommended value: 0.5.
         self.t_first = self.t_first
         
         # loss_type: Type of loss function.
@@ -222,6 +232,8 @@ class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
                 f"but now got {timestep_sampler_type!r}"
             )
         self.timestep_sampler_type = timestep_sampler_type
+
+        #-----------------------------------------------------------------------------------------------
 
         print("Flow params: %e" % sum(p.numel() for p in self.model.parameters()))
         print("Vision params: %e" % sum(p.numel() for p in self.obs_encoder.parameters()))
@@ -273,7 +285,7 @@ class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
                     local_cond=local_cond, global_cond=global_cond)
                 v_t = (a_pred - x_t)/(1 - t + 1e-8)
 
-                # compute previous image: x_t -> x_t+dt
+                # compute previous image: x_t -> x_{t + dt}
                 x_t = x_t + dt*v_t
                 t = t + dt
 
@@ -394,7 +406,7 @@ class L1FlowUnetHybridImagePolicy(BaseImagePolicy):
         elif self.timestep_sampler_type == 'beta':
             timesteps = (self.beta_dist.sample((bsz,))).to(trajectory.device)
         elif self.timestep_sampler_type == 'mixed':
-            # default: logistic + uniform, 
+            # default: logistic + uniform
             timesteps = self.logisticnormal_dist.sample((bsz,))[:,0].to(trajectory.device)
             uni_timesteps = torch.rand_like(timesteps)
             mask = torch.rand_like(uni_timesteps) < 0.01
