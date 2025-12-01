@@ -28,16 +28,16 @@ logging:
     group: null
     id: null
     mode: online
-    name: toolhang_ph25_l1_NFE2_0
-    project: DP_toolhang_ph
+    name: toolhang_ph
+    project: L1Flow_toolhang_ph
     resume: true
     tags:
-        - train_diffusion_unet_hybrid
-        - tool_hang_image_abs
+        - train_L1Flow
+        - toolhang_ph
         - default
 multi_run:
-    run_dir: data/outputs/2023.01.03/19.43.26_train_diffusion_unet_hybrid_tool_hang_image_abs
-    wandb_name_base: 2023.01.03-19.43.26_train_diffusion_unet_hybrid_tool_hang_image_abs
+    run_dir: results/EXP1/toolhang_ph
+    wandb_name_base: L1Flow_toolhang_ph
 n_action_steps: 8
 n_latency_steps: 0
 n_obs_steps: 2
@@ -53,7 +53,7 @@ optimizer:
     weight_decay: 1.0e-06
 past_action_visible: false
 policy:
-    _target_: diffusion_policy.policy.flow_l1_v_loss.FlowUnetL1SampleHybridImagePolicy
+    _target_: diffusion_policy.policy.L1Flow_unet_hybrid_image_policy.L1FlowUnetHybridImagePolicy
     cond_predict_scale: true
     crop_shape:
         - 216
@@ -64,12 +64,13 @@ policy:
         - 1024
         - 2048
     eval_fixed_crop: true
+    rot_aug: false
     horizon: 16
     kernel_size: 5
     n_action_steps: 8
     n_groups: 8
     n_obs_steps: 2
-    noise_scheduler:
+    noise_scheduler: # not used
         _target_: diffusers.schedulers.scheduling_ddpm.DDPMScheduler
         beta_end: 0.02
         beta_schedule: squaredcos_cap_v2
@@ -78,7 +79,39 @@ policy:
         num_train_timesteps: 100
         prediction_type: epsilon
         variance_type: fixed_small
+
+    #------------------------------------------------------------------------------
+    # Configuration Options (adjust as needed):
+    #------------------------------------------------------------------------------
+
+    # infer_strategy: Inference strategy.
+    #   - "L1Flow": (recommended) Our proposed two-step inference method.
+    #   - "FM":     Standard flow-matching inference, i.e., Euler integration over [0,1].
+    infer_strategy: L1Flow
+
+    # num_inference_steps: Number of inference steps.
+    #   - Only effective for in `FM`.
+    #   - Ignored in "L1Flow", which uses a fixed two-step inference process.
     num_inference_steps: 2
+
+    # t_first: Initial time point for the first inference step.
+    #   - Only used in "L1Flow".
+    #   - Recommended value: 0.5.
+    t_first: 0.5
+
+    # loss_type: Type of loss function.
+    #   - Options: "l1" (recommended) or "mse".
+    loss_type: l1
+
+    # loss_space: Target loss space for supervision.
+    #   - Options: "sample" (default) or "velocity".
+    loss_space: sample
+
+    # timestep_sampler_type: Timesteps sampling strategy
+    #   - Options: "uniform", "beta", or "mixed" (recommended for balanced coverage).
+    timestep_sampler_type: mixed
+    #------------------------------------------------------------------------------
+
     obs_as_global_cond: true
     obs_encoder_group_norm: true
     shape_meta:

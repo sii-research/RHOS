@@ -15,7 +15,7 @@ from multiprocessing import Process, Queue
 import argparse
 import re
 import shutil
-from typing import Optional, Union  # <-- 新增：用于兼容旧版 Python 的类型注解
+from typing import Optional, Union 
 
 
 # --- Interactive task selection ---
@@ -228,7 +228,7 @@ def count_task_states() -> tuple[int, int, int, int]:
 
 def main():
     parser = argparse.ArgumentParser(description="Launch concurrent training workers.")
-    parser.add_argument("num_gpus", type=int, help="Number of GPUs to utilize (e.g., 4)")
+    parser.add_argument("--num_gpus", type=int, help="Number of GPUs to utilize (e.g., 4)")
     args = parser.parse_args()
     n_gpus = args.num_gpus
 
@@ -271,7 +271,8 @@ def main():
         log_queue.put("STOP")
         logger.join()
 
-        time.sleep(1)  # Avoid tight polling
+        # Small sleep to avoid overwhelming I/O on tight loops
+        time.sleep(random.uniform(0.5, 1.5))
 
 
 if __name__ == "__main__":

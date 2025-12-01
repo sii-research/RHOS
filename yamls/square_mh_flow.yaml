@@ -29,15 +29,15 @@ logging:
     id: null
     mode: online
     name: square_mh
-    project: square_mh
+    project: L1Flow_square_mh
     resume: true
     tags:
-        - train_flow_unet_hybrid
-        - square_image
+        - train_L1Flow
+        - square_mh
         - default
 multi_run:
-    run_dir: data/outputs/2022.12.29/22.31.41_train_diffusion_unet_hybrid_square_image
-    wandb_name_base: 2022.12.29-22.31.41_train_diffusion_unet_hybrid_square_image
+    run_dir: results/EXP1/square_mh
+    wandb_name_base: L1Flow_square_mh
 n_action_steps: 8
 n_latency_steps: 0
 n_obs_steps: 2

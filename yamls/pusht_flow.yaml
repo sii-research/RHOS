@@ -29,15 +29,15 @@ logging:
     id: null
     mode: online
     name: pusht
-    project: pusht
+    project: L1Flow_pusht
     resume: true
     tags:
-        - train_flow_unet_hybrid
-        - pusht_image
+        - train_L1Flow
+        - pusht
         - default
 multi_run:
-    run_dir: data/outputs/flow
-    wandb_name_base: flow
+    run_dir: results/EXP1/pusht
+    wandb_name_base: L1Flow_pusht
 n_action_steps: 8
 n_latency_steps: 0
 n_obs_steps: 2
