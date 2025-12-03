@@ -1,13 +1,10 @@
 """
 Usage:
-python eval.py --checkpoint_dir data/outputs4/pusht/flow_L1_10/run_4/checkpoints
+python eval.py -c results/EXP1/pusht/run_0/checkpoints 
+python eval.py -c results/EXP1/pusht/run_0/checkpoints -i L1Flow -t 0.5 -d cuda:0
 """
 
 import sys
-# use line-buffering for both stdout and stderr
-sys.stdout = open(sys.stdout.fileno(), mode='w', buffering=1)
-sys.stderr = open(sys.stderr.fileno(), mode='w', buffering=1)
-
 import os
 import pathlib
 import click
@@ -45,29 +42,25 @@ def find_best_checkpoint(checkpoint_dir):
     return os.path.join(checkpoint_dir, best_ckpt)
 
 
-def get_base_log_path(base_dir, policy, nfe):
-    """Return the base path without version suffix: eval_log_p1_n2.yaml"""
-    base_dir = pathlib.Path(base_dir)
-    stem = f"eval_log_p{policy}_n{nfe}"
-    return base_dir / (stem + ".yaml")
+def get_log_path(output_dir, infer_strategy, nfe, t_first):
+    """
+    Return the base path: 
+    example: eval_log_L1Flow_t0.5.yaml or eval_log_FM_NFE10.yaml
+    """
+    base_dir = pathlib.Path(output_dir)
 
-def get_log_path(base_dir, policy, nfe):
-    """Return the base path with version suffix: eval_log_p1_n2.yaml"""
-    base_dir = pathlib.Path(base_dir)
-    stem = f"eval_log_p{policy}_n{nfe}"
-    
-    # Try base name first
-    candidate = base_dir / (stem + ".yaml")
-    if not candidate.exists():
-        return candidate
-    # Then try with version suffix: _v2, _v3, ...
-    version = 2
-    while True:
-        versioned_stem = f"{stem}_v{version}"
-        candidate = base_dir / (versioned_stem + ".yaml")
-        if not candidate.exists():
-            return candidate
-        version += 1
+    if infer_strategy is None:
+        return None
+    if infer_strategy == "L1Flow":
+        if t_first is None:
+            raise ValueError("`t_first` must be provided for `L1Flow` inference strategy")
+        stem = f"eval_log_{infer_strategy}_t{t_first}"
+    else:
+        if nfe is None:
+            raise ValueError("`nfe` must be provided for `FM` inference strategy")
+        stem = f"eval_log_{infer_strategy}_n{nfe}"
+
+    return base_dir / (stem + ".yaml")
 
 
 def to_python_scalar(value):
@@ -118,7 +111,7 @@ def main(checkpoint_dir, infer_strategy, nfe, t_first, device):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Check if evaluation already exists ---
-    base_log_path = get_base_log_path(infer_strategy, nfe, t_first)
+    base_log_path = get_log_path(output_dir, infer_strategy, nfe, t_first)
     if base_log_path is not None and base_log_path.exists():
         print(colored(f"[SKIP] Evaluation already exists at {base_log_path}. Skipping.", "yellow"))
         return  # Early exit
@@ -133,19 +126,14 @@ def main(checkpoint_dir, infer_strategy, nfe, t_first, device):
     OmegaConf.set_readonly(cfg, False)
     OmegaConf.set_struct(cfg, False)
     
-    log_policy = "flow_L1sample"
-    if policy == 1:
+    if infer_strategy is not None:
         # 使用原始 FM 的 inference
-        cfg.policy._target_ = "diffusion_policy.policy.flow_test_NFE_origin.FlowUnetL1SampleHybridImagePolicy"
-        log_policy = "flow_test_NFE_origin"
-        # 转成 int
-        cfg.policy.num_inference_steps = int(nfe)
-    else:
-        # 使用论文中的两步 inference
-        cfg.policy._target_ = "diffusion_policy.policy.flow_test_NFE_ours.FlowUnetL1SampleHybridImagePolicy"
-        log_policy = "flow_test_NFE_ours"
-        # 这里是当做 first_t 用
-        cfg.policy.num_inference_steps = nfe
+        cfg.policy.infer_strategy = infer_strategy
+        cfg.policy.t_first = t_first
+        cfg.policy.nfe = nfe
+    
+    base_log_path = get_log_path(output_dir, cfg.policy.infer_strategy, cfg.policy.nfe, cfg.policy.t_first)
+        
     
     cls = hydra.utils.get_class(cfg._target_)
     workspace = cls(cfg, output_dir=str(output_dir))
@@ -171,8 +159,9 @@ def main(checkpoint_dir, infer_strategy, nfe, t_first, device):
 
     cli_args = {
         "checkpoint": str(checkpoint),
+        "infer_strategy": infer_strategy,
         "nfe": nfe,
-        "policy": log_policy,
+        "t_first": t_first,
         "test_mean_score": test_mean_score,
         "train_mean_score": train_mean_score,
         "device": str(device)
@@ -193,7 +182,7 @@ def main(checkpoint_dir, infer_strategy, nfe, t_first, device):
     }
 
     # Save to base name
-    out_path = base_log_path
+    out_path = str(base_log_path)
     with open(out_path, 'w') as f:
         yaml.dump(final_log, f, default_flow_style=False, indent=2, sort_keys=False)
 

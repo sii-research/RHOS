@@ -4,7 +4,6 @@ wandb
 data
 _wandb
 locks
-media
 results
 .history
 .vscode

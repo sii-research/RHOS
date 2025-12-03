@@ -2,7 +2,7 @@
 
 [[Project page]](https://song-wx.github.io/l1flow.github.io/)
 [[Paper]](https://arxiv.org/pdf/2511.17898)
-[[Data]](https://diffusion-policy.cs.columbia.edu/data/training/)
+[[Dataset]](https://diffusion-policy.cs.columbia.edu/data/training/)
 
 [Weixi Song](https://scholar.google.com/citations?user=fvP8SGcAAAAJ)<sup>1,2,3</sup>,
 [Zhetao Chen](https://scholar.google.com/citations?hl=zh-CN&user=1r_iQ9YAAAAJ)<sup>1,2</sup>,
@@ -21,8 +21,8 @@
 
 <sup>†</sup>Corresponding Author
 
-<img src="media/teaser.png" alt="drawing" width="100%"/>
-<img src="media/multimodal_sim.png" alt="drawing" width="100%"/>
+<img src="media/outline.jpg" alt="drawing" width="100%"/>
+<img src="media/algo.jpg" alt="drawing" width="100%"/>
 
 ## 🛠️ Installation
 
