@@ -50,8 +50,9 @@ This will create a conda environment named `robodiff`, which is mainly derived f
 
 ### Download Training Data
 
-Under the repo root, create data subdirectory and download the corresponding zip file from [https://diffusion-policy.cs.columbia.edu/data/training/](https://diffusion-policy.cs.columbia.edu/data/training/).  
-You can run `python script/download.py` to automate all steps, or execute them manually:
+You can run `python script/download.py` to download all datasets automatically from [https://diffusion-policy.cs.columbia.edu/data/training/](https://diffusion-policy.cs.columbia.edu/data/training/)(requires `wget`).
+
+You can run python script/download.py to automate all steps, or execute them manually:
 
 ```console
 [diffusion_policy]$ mkdir data && cd data
@@ -73,7 +74,7 @@ wandb login
 Launch training with seed 42 on GPU 0.
 
 ```console
-(robodiff)[diffusion_policy]$ python script/train.py --config-dir=./yamls --config-name=pusht_flow training.device=cuda:0 hydra.run.dir=results/EXP1/pusht/run_0 logging.name=pusht1_L1Flow_0 policy.infer_strategy=L1Flow policy.num_inference_steps=2 policy.t_first=0.5 policy.loss_type=l1 policy.loss_space=sample policy.timestep_sampler_type=mixed task.env_runner.n_test=100 training.num_epochs=200 optimizer.lr=1e-4 policy._target_=diffusion_policy.policy.L1Flow_unet_hybrid_image_policy.L1FlowUnetHybridImagePolicy
+python script/train.py --config-dir=./yamls --config-name=pusht_flow training.device=cuda:0 hydra.run.dir=results/EXP1/pusht/run_0 logging.name=pusht1_L1Flow_0
 ```
 
 This will create a directory in format `data/outputs/yyyy.mm.dd/hh.mm.ss_<method_name>_<task_name>` where configs, logs and checkpoints are written to. The policy will be evaluated every 50 epochs with the success rate logged as `test/mean_score` on wandb, as well as videos for some rollouts.

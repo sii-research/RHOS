@@ -127,7 +127,6 @@ def main(checkpoint_dir, infer_strategy, nfe, t_first, device):
     OmegaConf.set_struct(cfg, False)
     
     if infer_strategy is not None:
-        # 使用原始 FM 的 inference
         cfg.policy.infer_strategy = infer_strategy
         cfg.policy.t_first = t_first
         cfg.policy.nfe = nfe
