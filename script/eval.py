@@ -45,7 +45,7 @@ def find_best_checkpoint(checkpoint_dir):
 def get_log_path(output_dir, infer_strategy, nfe, t_first):
     """
     Return the base path: 
-    example: eval_log_L1Flow_t0.5.yaml or eval_log_FM_NFE10.yaml
+    example: eval_log_L1Flow_t_0.5.yaml or eval_log_FM_n_10.yaml
     """
     base_dir = pathlib.Path(output_dir)
 
@@ -54,11 +54,11 @@ def get_log_path(output_dir, infer_strategy, nfe, t_first):
     if infer_strategy == "L1Flow":
         if t_first is None:
             raise ValueError("`t_first` must be provided for `L1Flow` inference strategy")
-        stem = f"eval_log_{infer_strategy}_t{t_first}"
+        stem = f"eval_log_{infer_strategy}_t_{t_first}"
     else:
         if nfe is None:
             raise ValueError("`nfe` must be provided for `FM` inference strategy")
-        stem = f"eval_log_{infer_strategy}_n{nfe}"
+        stem = f"eval_log_{infer_strategy}_n_{nfe}"
 
     return base_dir / (stem + ".yaml")
 

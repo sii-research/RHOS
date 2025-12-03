@@ -21,15 +21,21 @@ import shutil
 from typing import Optional, Union
 
 
-# --- Interactive task selection ---
+# ------------------------------------------------------------------------------
+# Interactive task selection
 while True:
     try:
         EXP_id = int(input("Select EXP_id: "))
+        TASK_FILE = f"TASKS/EXP{EXP_id}.jsonl"
         break
     except ValueError:
         print("Invalid input. Please enter an integer.")
+# ------------------------------------------------------------------------------
 
-TASK_FILE = f"TASKS/EXP{EXP_id}.jsonl"
+# Or You can hardcode the task file here:
+# TASK_FILE = "TASKS/EXP1.jsonl"
+
+# ------------------------------------------------------------------------------
 
 if not os.path.exists(TASK_FILE):
     print(f"Error: Task file '{TASK_FILE}' does not exist.")
