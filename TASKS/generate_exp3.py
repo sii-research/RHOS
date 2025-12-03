@@ -1,13 +1,13 @@
 import json
 from pathlib import Path
 
-EXP_id = 1
+EXP_id = 3
 
-# TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_mh", "transport_ph"]
-TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_ph"]
+TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_mh", "transport_ph"]
+# TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_ph"]
 
 task_list = []
-RUN_ids  = [0, 1, 2, 3, 4]
+RUN_ids  = [0]
 
 #------------------------------------------------------------------------------
 # Configuration Options (adjust as needed):
@@ -30,7 +30,7 @@ TASK_CONFIG = {
     "square_mh":    {"epochs": 1000, "lr": "2e-5"},
     "square_ph":    {"epochs": 200, "lr": "1e-4"},
     "toolhang_ph":  {"epochs": 500, "lr": "5e-5"},
-    "transport_mh": {"epochs": 200, "lr": "1e-4"},
+    "transport_mh": {"epochs": 200, "lr": "6e-5"},
     "transport_ph": {"epochs": 200, "lr": "6e-5"},
 }
 #------------------------------------------------------------------------------
@@ -76,11 +76,10 @@ for run_id in RUN_ids:
             "output_dir": output_dir
         })
 
-# output 
-output_path = Path(__file__).parent / f"EXP{EXP_id}.jsonl"
+EXP_file = f"EXP{EXP_id}.jsonl"
 
-with open(output_path, "w") as f:
+with open(EXP_file, "w") as f:
     for t in task_list:
         f.write(json.dumps(t) + "\n")
 
-print(f"✅ Generated {len(task_list)} tasks in L1FLOW/TASKS/EXP{EXP_id}.jsonl")
+print(f"✅ Generated {len(task_list)} tasks in TASKS/{EXP_file}")

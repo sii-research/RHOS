@@ -2,7 +2,13 @@ import re
 from pathlib import Path
 import numpy as np
 
-EXP_id = 2
+# --- Interactive task selection ---
+while True:
+    try:
+        EXP_id = int(input("Select EXP_id (-1 represents select all): "))
+        break
+    except ValueError:
+        print("Invalid input. Please enter an integer.")
 
 # Configure supported tasks list
 TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_mh", "transport_ph"]
@@ -28,20 +34,21 @@ ckpt_pattern = re.compile(r"epoch=\d+-test_mean_score=([+-]?\d*\.?\d+)\.ckpt")
 print(f"\n[INFO] Analyzing task: {task_name}\n")
 
 # Determine base directories based on EXP_id
-if EXP_id is not None:
-    base_dirs = list(Path("results").glob(f"EXP{EXP_id}"))
-    if not base_dirs:
-        print(f"[WARN] No results/EXP{EXP_id} directory found.")
-        exit(1)
-else:
+if EXP_id == -1:
     base_dirs = list(Path("results").glob("EXP*"))
     if not base_dirs:
         print("[WARN] No results/EXP* directories found.")
+        exit(1)
+else:
+    base_dirs = list(Path("results").glob(f"EXP{EXP_id}"))
+    if not base_dirs:
+        print(f"[WARN] No results/EXP{EXP_id} directory found.")
         exit(1)
 
 best_scores = []  # Store best scores for each run
 ckpt_info = []    # Store (score, relative_checkpoint_path) tuples
 seen_run_paths = set()  # Track processed runs (though not used in current logic)
+path_score_list = []
 
 # Process each experiment directory
 for base_dir in sorted(base_dirs):
@@ -94,7 +101,7 @@ for base_dir in sorted(base_dirs):
                 short_path = str(best_ckpt_file)
             best_scores.append(max_score)
             ckpt_info.append((max_score, short_path))
-            print(f"  OK {rel_path_str}: {max_score:.3f}")
+            print(f"{rel_path_str}: {max_score:.3f}")
 
 # Summary statistics
 if not best_scores:
@@ -128,4 +135,4 @@ for score, path in zip(sorted_scores, sorted_paths):
 print(f"\nOverall mean ± std: {mean_all} ± {stderr_all}")
 print(f"Top-{top_k} mean ± std: {mean_top} ± {stderr_top}\n")
 
-print("Analysis complete for all tasks!")
+print(f"✅ {task_name} tasks analysis completed!")

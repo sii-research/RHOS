@@ -97,10 +97,11 @@ def to_python_scalar(value):
 
 @click.command()
 @click.option('-c', '--checkpoint_dir', required=True, help="Directory containing .ckpt files")
-@click.option('-n', '--nfe', default=2, type=float)
-@click.option('-p', '--policy', default=1, type=int)
+@click.option('-i', '--infer_strategy', type=str)
+@click.option('-n', '--nfe', type=int)
+@click.option('-t', '--t_first', type=float)
 @click.option('-d', '--device', default='cuda:0')
-def main(checkpoint_dir, nfe, policy, device):
+def main(checkpoint_dir, infer_strategy, nfe, t_first, device):
     seed = 42
     random.seed(seed)
     np.random.seed(seed)
@@ -117,10 +118,10 @@ def main(checkpoint_dir, nfe, policy, device):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Check if evaluation already exists ---
-    base_log_path = get_base_log_path(output_dir, policy, nfe)
-    # if base_log_path.exists():
-    #     print(colored(f"[SKIP] Evaluation already exists at {base_log_path}. Skipping.", "yellow"))
-    #     return  # Early exit
+    base_log_path = get_base_log_path(infer_strategy, nfe, t_first)
+    if base_log_path is not None and base_log_path.exists():
+        print(colored(f"[SKIP] Evaluation already exists at {base_log_path}. Skipping.", "yellow"))
+        return  # Early exit
 
     # --- Proceed with evaluation ---
     checkpoint = find_best_checkpoint(str(checkpoint_dir))

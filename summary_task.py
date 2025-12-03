@@ -2,7 +2,13 @@ import re
 from pathlib import Path
 import numpy as np
 
-EXP_id = 1
+# --- Interactive task selection ---
+while True:
+    try:
+        EXP_id = int(input("Select EXP_id: "))
+        break
+    except ValueError:
+        print("Invalid input. Please enter an integer.")
 
 # Configure supported tasks list
 TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_mh", "transport_ph"]
@@ -73,4 +79,4 @@ else:
     print(f" Scores: {score_list}")
     print(f" Mean ± StdErr: {mean} ± {stderr}\n")
 
-print("✅ All tasks analysis completed!")
+print(f"✅ {task_name} tasks analysis completed!")

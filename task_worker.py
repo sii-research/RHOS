@@ -1,7 +1,10 @@
-# launch_workers.py
-"""Distributed task launcher with file-based lock coordination.
+"""
+Multi-GPU task launcher with file-based lock coordination.
 
-Supports multi-GPU, multi-machine execution via `.locked`/`.done` marker files.
+Supports incremental task execution on multi GPUs (specified via --gpu-nums).
+
+Usage:
+    python task_worker.py --gpu-nums 2
 """
 
 import json

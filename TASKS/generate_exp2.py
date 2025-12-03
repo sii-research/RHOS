@@ -3,8 +3,8 @@ from pathlib import Path
 
 EXP_id = 2
 
-# TASKS = ["pusht", "square_mh", "square_ph", "toolhang_ph", "transport_mh", "transport_ph"]
-TASKS = ["pusht", "square_mh"]
+TASKS = ["square_ph", "toolhang_ph", "transport_mh", "transport_ph"]
+# TASKS = ["pusht", "square_mh"]
 
 task_list = []
 RUN_ids  = [0]

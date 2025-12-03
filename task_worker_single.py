@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
-"""Single-GPU task launcher with file-based lock coordination.
+"""
+Single-GPU task launcher with file-based lock coordination.
 
 Supports incremental task execution on a single GPU (specified via --gpu-id).
-Uses `.locked`/`.done` marker files to coordinate task state.
 
 Usage:
-    python launch_worker_single_gpu.py --gpu-id 2
+    python task_worker_single.py --gpu-id 2
 """
 
 import json
