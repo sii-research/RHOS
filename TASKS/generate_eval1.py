@@ -32,7 +32,7 @@ for run_id in RUN_ids:
         ckpt_dir = f"results/EXP{EXP_id}/{task_name}/run_{run_id}"
 
         cmd = [
-            "python", "script/eval.py",
+            "python", "eval.py",
             f"-c {ckpt_dir}",
             f"-i {infer_strategy}",
             f"-n {num_inference_steps}",

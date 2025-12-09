@@ -51,7 +51,7 @@ for run_id in RUN_ids:
         epoch = TASK_CONFIG[task_name]["epochs"]
 
         cmd = [
-            "python", "script/train.py",
+            "python", "train.py",
             f"--config-dir=./yamls",
             f"--config-name={task_name}_flow",
             f"training.device=cuda:0",

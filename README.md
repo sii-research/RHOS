@@ -50,9 +50,9 @@ This will create a conda environment named `robodiff`, which is mainly derived f
 
 ### Download Training Data
 
-You can run `python script/download.py` to download all datasets automatically from [https://diffusion-policy.cs.columbia.edu/data/training/](https://diffusion-policy.cs.columbia.edu/data/training/)(requires `wget`).
+You can run `python download.py` to download all datasets automatically from [here](https://diffusion-policy.cs.columbia.edu/data/training/).
 
-You can run python script/download.py to automate all steps, or execute them manually:
+Or you can execute them manually:
 
 ```console
 [diffusion_policy]$ mkdir data && cd data
@@ -74,44 +74,49 @@ wandb login
 Launch training with seed 42 on GPU 0.
 
 ```console
-python script/train.py --config-dir=./yamls --config-name=pusht_flow training.device=cuda:0 hydra.run.dir=results/EXP1/pusht/run_0 logging.name=pusht1_L1Flow_0
+python train.py --config-dir=./yamls --config-name=pusht_flow training.device=cuda:0 hydra.run.dir=results/EXP1/pusht/run_0 logging.name=pusht1_L1Flow_0
 ```
 
-This will create a directory in format `data/outputs/yyyy.mm.dd/hh.mm.ss_<method_name>_<task_name>` where configs, logs and checkpoints are written to. The policy will be evaluated every 50 epochs with the success rate logged as `test/mean_score` on wandb, as well as videos for some rollouts.
+This will create a directory `results/EXP1/pusht/run_0` where configs, logs and checkpoints are written to. The policy will be evaluated every 5 epochs with the success rate logged as `test/mean_score` on wandb, as well as videos for some rollouts.
+
+The result directory `results/EXP1/pusht/run_0` structure:
 
 ```console
-(robodiff)[diffusion_policy]$ tree data/outputs/2023.03.01/20.02.03_train_diffusion_unet_hybrid_pusht_image -I wandb
-data/outputs/2023.03.01/20.02.03_train_diffusion_unet_hybrid_pusht_image
-├── checkpoints
-│   ├── epoch=0000-test_mean_score=0.134.ckpt
-│   └── latest.ckpt
 ├── .hydra
 │   ├── config.yaml
 │   ├── hydra.yaml
 │   └── overrides.yaml
-├── logs.json.txt
+├── checkpoints
+│   ├── epoch=0090-test_mean_score=0.744.ckpt
+│   ├── epoch=0140-test_mean_score=0.738.ckpt
+│   └── epoch=0185-test_mean_score=0.758.ckpt
 ├── media
-│   ├── 2k5u6wli.mp4
-│   ├── 2kvovxms.mp4
-│   ├── 2pxd9f6b.mp4
-│   ├── 2q5gjt5f.mp4
-│   ├── 2sawbf6m.mp4
-│   └── 538ubl79.mp4
+│   ├── xxx.mp4
+│   └── ...
+├── wandb
+│   └── ...
+├── logs.json.txt
 └── train.log
-
-3 directories, 13 files
 ```
 
-### Generate Multi-task
+### Generate Multi-task(recommended)
 
 ### Evaluate Pre-trained Checkpoints
 
-Download a checkpoint from the published training log folders, such as [https://diffusion-policy.cs.columbia.edu/data/experiments/low_dim/pusht/diffusion_policy_cnn/train_0/checkpoints/epoch=0550-test_mean_score=0.969.ckpt](https://diffusion-policy.cs.columbia.edu/data/experiments/low_dim/pusht/diffusion_policy_cnn/train_0/checkpoints/epoch=0550-test_mean_score=0.969.ckpt).
+We provide pre-trained checkpoints for evaluation on the Robomimic benchmark, you can download them from [huggingface](https://huggingface.co/datasets/THyanNK/L1FLOW/tree/main/results).
+
+However, we do **not recommend** using this method to determine the performance of the policy, as there is a problem of inconsistent training and evaluation results, which can be seen in this [issue](https://github.com/real-stanford/diffusion_policy/issues/124)
+
+#### Example
+
+1. Run `python download_ckpt.py` to download the checkpoint for the task `pusht/run_0`.
+
+2.
 
 Run the evaluation script:
 
 ```console
-(robodiff)[diffusion_policy]$ python eval.py --checkpoint data/0550-test_mean_score=0.969.ckpt --output_dir data/pusht_eval_output --device cuda:0
+python eval.py --checkpoint data/0550-test_mean_score=0.969.ckpt --output_dir data/pusht_eval_output --device cuda:0
 ```
 
 This will generate the following directory structure:
