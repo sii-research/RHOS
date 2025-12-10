@@ -44,7 +44,7 @@ This will create a conda environment named `robodiff`, which is mainly derived f
 
 ## 🖥️ Training on Robomimic Benchmark
 
-### 1. Download Training Data
+## 1. Download Training Data
 
 You can run this script to download all datasets automatically from [here](https://diffusion-policy.cs.columbia.edu/data/training/).
 
@@ -62,7 +62,7 @@ Or you can execute them manually:
 [data]$ unzip robomimic_image.zip
 ```
 
-### 2. Train Single Task
+## 2. Train Single Task
 
 Activate conda environment and login to [wandb](https://wandb.ai) (if you haven't already).
 
@@ -99,9 +99,11 @@ The result directory `results/EXP1/pusht/run_0` structure:
 └── train.log
 ```
 
-### ⭐ 3. Generate Multi-task (Recommended)
+<a id="sec-multi-task"></a>
 
-For convenience, we provide a script `TASKS/generate_exp1.py` for generating multi-task training configurations. You can modify the task list and configuration options in this script. The detailed configuration options are shown in Sec4:configurations.
+## ⭐ 3. Generate Multi-task (Recommended)
+
+For convenience, we provide a script `TASKS/generate_exp1.py` for generating multi-task training configurations. You can modify the task list and configuration options in this script. The detailed configuration options are shown in Section 4. Configuration.
 
 ```console
 python TASKS/generate_exp1.py
@@ -130,12 +132,13 @@ python task_worker.py --gpu_nums 2
 python task_worker_single.py --gpu_id 0
 ```
 
-### 4. Summary Results
+## 4. Summary Results
 
 We provide some scripts to summarize the results of multiple runs.
 
 ```py
-# Enter a number to choose the EXP you want to summary, e.g., `1` corresponds to the results in `results/EXP1/`.
+# Enter a number to choose the EXP you want to summary
+# e.g., `1` corresponds to the results in `results/EXP1/`.
 # It will summary all tasks under `results/<EXP>/`
 python summary_exp.py
 
@@ -149,13 +152,13 @@ python summary_task.py
 python summary_task_all.py
 ```
 
-### 5. Evaluate Pre-trained Checkpoints
+## 5. Evaluate Pre-trained Checkpoints
 
 **⚠️ We do _not recommend_ using this method to determine the performance of the policy, as there is a problem of inconsistent training and evaluation results, which can be seen in this [issue](https://github.com/real-stanford/diffusion_policy/issues/124).**
 
 We provide pre-trained checkpoints for evaluation on the Robomimic benchmark, you can download them from [huggingface](https://huggingface.co/datasets/THyanNK/L1FLOW/tree/main/results).
 
-#### Example
+### Example
 
 First, run the download script to download the checkpoint of `pusht/run_0`, which will be saved in `results/L1FLOW/pusht/run_0/`
 
@@ -189,7 +192,7 @@ metrics:
 }
 ```
 
-We also provide scripts to generate multi eval tasks. You can use them just like the `3. Generate Multi-task`.
+We also provide scripts to generate multi eval tasks. We also provide scripts to generate multiple evaluation tasks. You can use them just like the [multi-task training setup (**Section 3**)](#multi-task).
 
 ```console
 python TASKS/generate_eval1.py
