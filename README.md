@@ -28,13 +28,13 @@
 
 To reproduce our simulation benchmark results, install our conda environment on a Linux machine with Nvidia GPU. First, you should install the following apt packages for `mujoco`:
 
-```console
+```sh
 sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf
 ```
 
 Then you can use `conda` or `mamba` as the package manager to create the environment:
 
-```console
+```sh
 conda env create -f yamls/environment.yaml
 ```
 
@@ -43,6 +43,15 @@ This will create a conda environment named `robodiff`, which is mainly derived f
 **⚠️ Attention: Do not upgrade the package version arbitrarily, as the code strongly depends on `gym==0.21.0`**
 
 ## 🖥️ Training on Robomimic Benchmark
+
+## 0. TLDR
+
+You can directly run these following commands to train the L1Flow policy on the Robomimic benchmark. The detailed explanation is in the following sections.
+
+```sh
+# Download training data
+python download_dataset.py
+```
 
 ## 1. Download Training Data
 
@@ -55,7 +64,7 @@ python download_dataset.py
 Or you can execute them manually:
 
 ```console
-[diffusion_policy]$ mkdir data && cd data
+[L1Flow]$ mkdir data && cd data
 [data]$ wget https://diffusion-policy.cs.columbia.edu/data/training/pusht.zip
 [data]$ wget https://diffusion-policy.cs.columbia.edu/data/training/robomimic_image.zip
 [data]$ unzip pusht.zip
