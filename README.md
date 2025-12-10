@@ -24,9 +24,7 @@
 <img src="media/outline.jpg" alt="drawing" width="60%"/>
 <img src="media/algo.jpg" alt="drawing" width="50%"/>
 
-## 🛠️ Installation
-
-### 🖥️ Simulation
+## 🛠️ Environment Installation
 
 To reproduce our simulation benchmark results, install our conda environment on a Linux machine with Nvidia GPU. First, you should install the following apt packages for `mujoco`:
 
@@ -42,15 +40,17 @@ conda env create -f yamls/environment.yaml
 
 This will create a conda environment named `robodiff`, which is mainly derived from [diffusion_policy](https://github.com/real-stanford/diffusion_policy).
 
-**Attention**: Do not upgrade the package version arbitrarily, as the code strongly depends on `gym==0.21.0`
-
-### 🦾 Real Robot
+**⚠️ Attention: Do not upgrade the package version arbitrarily, as the code strongly depends on `gym==0.21.0`**
 
 ## 🖥️ Training on Robomimic Benchmark
 
-### Download Training Data
+### 1. Download Training Data
 
-You can run `python download_dataset.py` to download all datasets automatically from [here](https://diffusion-policy.cs.columbia.edu/data/training/).
+You can run this script to download all datasets automatically from [here](https://diffusion-policy.cs.columbia.edu/data/training/).
+
+```console
+python download_dataset.py
+```
 
 Or you can execute them manually:
 
@@ -62,7 +62,7 @@ Or you can execute them manually:
 [data]$ unzip robomimic_image.zip
 ```
 
-### Train Single Task
+### 2. Train Single Task
 
 Activate conda environment and login to [wandb](https://wandb.ai) (if you haven't already).
 
@@ -99,16 +99,15 @@ The result directory `results/EXP1/pusht/run_0` structure:
 └── train.log
 ```
 
-### Generate Multi-task(recommended)
+### ⭐ 3. Generate Multi-task (Recommended)
 
-For convenience, we provide a script for generating multi-task training configurations: TASKS/generate_exp1.py.
-You can modify the task list and configuration options in this script to produce the multi-task training setups you need.
+For convenience, we provide a script `TASKS/generate_exp1.py` for generating multi-task training configurations. You can modify the task list and configuration options in this script. The detailed configuration options are shown in Sec4:configurations.
 
 ```console
 python TASKS/generate_exp1.py
 ```
 
-This command generates TASKS/EXP1.json, which contains the configuration for multi-task training. You can adjust parameters through the override field. The format is as follows:
+Run this command will generate `TASKS/EXP1.json`, which contains the configuration for multi-task training, which will adjust configuration through the override field. The format is as follows:
 
 ```json
 {
@@ -119,28 +118,52 @@ This command generates TASKS/EXP1.json, which contains the configuration for mul
 }
 ```
 
-You can then launch the training tasks using the commands below. The launcher supports multi-GPU and multi-node execution. It will automatically update `training.device=cuda:0` based on the assigned GPU. It also uses lock files to prevent the same task from being started more than once, which you can find under `locks/EXP1/`.
+You can then launch the training tasks using the commands below. The launcher supports multi-GPU and multi-node execution. It will automatically update `training.device=cuda:0` based on the assigned GPU. It also uses lock files(under `locks/EXP1/`) to prevent the same task from being started more than once.
 
 ```console
 # Launch with multiple GPUs. You will be prompted with "Select EXP_id:".
-# Enter a number, e.g., 1 corresponds to the tasks in `TASKS/EXP1.json`.
+# Enter a number, e.g., `1` corresponds to the tasks in `TASKS/EXP1.json`.
 python task_worker.py --gpu_nums 2
 
-# Launch on a specified single GPU
+# Launch on a specified single GPU. You will be prompted with "Select EXP_id:".
+# Enter a number, e.g., `1` corresponds to the tasks in `TASKS/EXP1.json`.
 python task_worker_single.py --gpu_id 0
 ```
 
-## Evaluate Pre-trained Checkpoints
+### 4. Summary Results
+
+We provide some scripts to summarize the results of multiple runs.
+
+```py
+# Enter a number to choose the EXP you want to summary, e.g., `1` corresponds to the results in `results/EXP1/`.
+# It will summary all tasks under `results/<EXP>/`
+python summary_exp.py
+
+# 1. Enter a number to choose the EXP you want to summary
+# 2. Enter a number to choose the task you want to summary
+# It will summary the choosen task under `results/<EXP>/`
+python summary_task.py
+
+# Enter a number to choose the task you want to summary
+# It will summary all runs under `results/<EXP>/<task>/`
+python summary_task_all.py
+```
+
+### 5. Evaluate Pre-trained Checkpoints
+
+**⚠️ We do _not recommend_ using this method to determine the performance of the policy, as there is a problem of inconsistent training and evaluation results, which can be seen in this [issue](https://github.com/real-stanford/diffusion_policy/issues/124).**
 
 We provide pre-trained checkpoints for evaluation on the Robomimic benchmark, you can download them from [huggingface](https://huggingface.co/datasets/THyanNK/L1FLOW/tree/main/results).
 
-> We do **not recommend** using this method to determine the performance of the policy, as there is a problem of inconsistent training and evaluation results, which can be seen in this [issue](https://github.com/real-stanford/diffusion_policy/issues/124)
-
 #### Example
 
-First, run `python download_ckpt.py` to download the checkpoint for the checkpoint of `pusht/run_0`, which will be saved in `./results/L1FLOW/pusht/run_0/`
+First, run the download script to download the checkpoint of `pusht/run_0`, which will be saved in `results/L1FLOW/pusht/run_0/`
 
-Run the evaluation script:
+```console
+python download_ckpt.py
+```
+
+Then you can run the evaluation script with the inference strategy you want.
 
 ```console
 python eval.py -c results/L1FLOW/pusht/run_0 -i L1Flow -n 2 -t 0.5 -d cuda:0
@@ -148,52 +171,30 @@ python eval.py -c results/L1FLOW/pusht/run_0 -i L1Flow -n 2 -t 0.5 -d cuda:0
 
 This will generate the following directory structure in `{ckpt_dir}/eval_logs/`
 
-You can check `eval_log.json` to see the metrics that are logged to wandb during training:
+You can check `eval_log_L1Flow_t_0.5.json` to see the eval results. The format is as follows:
 
 ```console
 {
-  "test/mean_score": 0.9150393806777066,
-  "test/sim_max_reward_4300000": 1.0,
-  "test/sim_max_reward_4300001": 0.9872969750774386,
-...
-  "train/sim_video_1": "data/pusht_eval_output//media/2fo4btlf.mp4"
+cli_args:
+  ...
+  test_mean_score: 0.829236895631236
+  train_mean_score: 0.7408510637545613
+  ...
+config:
+  ...
+metrics:
+  train/sim_max_reward_0: 0.9882974097369663
+  train/sim_max_reward_1: 1.0
+  ...
 }
 ```
 
-Or you can generate multi eval tasks just like training:
+We also provide scripts to generate multi eval tasks. You can use them just like the `3. Generate Multi-task`.
 
 ```console
 python TASKS/generate_eval1.py
 python eval_worker.py --gpu_nums 2
 ```
-
-## 🦾 Demo, Training and Eval on a Real Robot
-
-Make sure your UR5 robot is running and accepting command from its network interface (emergency stop button within reach at all time), your RealSense cameras plugged in to your workstation (tested with `realsense-viewer`) and your SpaceMouse connected with the `spacenavd` daemon running (verify with `systemctl status spacenavd`).
-
-Start the demonstration collection script. Press "C" to start recording. Use SpaceMouse to move the robot. Press "S" to stop recording.
-
-```console
-(robodiff)[diffusion_policy]$ python demo_real_robot.py -o data/demo_pusht_real --robot_ip 192.168.0.204
-```
-
-This should result in a demonstration dataset in `data/demo_pusht_real` with in the same structure as our example [real Push-T training dataset](https://diffusion-policy.cs.columbia.edu/data/training/pusht_real.zip).
-
-To train a Diffusion Policy, launch training with config:
-
-```console
-(robodiff)[diffusion_policy]$ python train.py --config-name=train_diffusion_unet_real_image_workspace task.dataset_path=data/demo_pusht_real
-```
-
-Edit [`diffusion_policy/config/task/real_pusht_image.yaml`](./diffusion_policy/config/task/real_pusht_image.yaml) if your camera setup is different.
-
-Assuming the training has finished and you have a checkpoint at `data/outputs/blah/checkpoints/latest.ckpt`, launch the evaluation script with:
-
-```console
-python eval_real_robot.py -i data/outputs/blah/checkpoints/latest.ckpt -o data/eval_pusht_real --robot_ip 192.168.0.204
-```
-
-Press "C" to start evaluation (handing control over to the policy). Press "S" to stop the current episode.
 
 ## 🗺️ Codebase Tutorial
 
@@ -201,7 +202,7 @@ You can find a detailed codebase tutorial in [TUTORIAL.md](TUTORIAL.md) to help 
 
 ## 🏷️ License
 
-This repository is released under the MIT license. See [LICENSE](LICENSE) for additional details.
+This repository is released under the MIT license. See [LICENSE](media/LICENSE) for additional details.
 
 ## 🙏 Acknowledgement
 
