@@ -83,4 +83,4 @@ with open(output_path, "w") as f:
     for t in task_list:
         f.write(json.dumps(t) + "\n")
 
-print(f"✅ Generated {len(task_list)} tasks in L1FLOW/TASKS/EXP{EXP_id}.jsonl")
+print(f"✅ Generated {len(task_list)} tasks in TASKS/EXP{EXP_id}.jsonl")

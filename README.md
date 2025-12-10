@@ -28,13 +28,13 @@
 
 To reproduce our simulation benchmark results, install our conda environment on a Linux machine with Nvidia GPU. First, you should install the following apt packages for `mujoco`:
 
-```sh
+```console
 sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf
 ```
 
 Then you can use `conda` or `mamba` as the package manager to create the environment:
 
-```sh
+```console
 conda env create -f yamls/environment.yaml
 ```
 
@@ -49,8 +49,24 @@ This will create a conda environment named `robodiff`, which is mainly derived f
 You can directly run these following commands to train the L1Flow policy on the Robomimic benchmark. The detailed explanation is in the following sections.
 
 ```sh
+# Environment Installation
+sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf
+conda env create -f yamls/environment.yaml
+conda activate robodiff
+wandb login
+
 # Download training data
 python download_dataset.py
+
+# Generate multi-task training configurations
+python TASKS/generate_exp1.py
+# Launch multi-task training on multiple GPUs
+python task_worker.py --gpu_nums 2
+# Or launch multi-task training on a specified single GPU
+python task_worker_single.py --gpu_id 0
+
+# Summary results
+python summary_exp.py
 ```
 
 ## 1. Download Training Data
@@ -129,7 +145,7 @@ Run this command will generate `TASKS/EXP1.json`, which contains the configurati
 
 You can then launch the training tasks using the commands below. The launcher supports multi-GPU and multi-node execution. It will automatically update `training.device=cuda:0` based on the assigned GPU. It also uses lock files(under `locks/EXP1/`) to prevent the same task from being started more than once.
 
-```console
+```sh
 # Launch with multiple GPUs. You will be prompted with "Select EXP_id:".
 # Enter a number, e.g., `1` corresponds to the tasks in `TASKS/EXP1.json`.
 python task_worker.py --gpu_nums 2
@@ -145,8 +161,7 @@ We provide several configuration options for the L1Flow policy in the YAML files
 
 We suggest modifying these parameters in the generation script `TASKS/generate_exp1.py`, which will change the configuration through override, instead of directly modifying them in the YAML files.
 
-```yaml
----
+```sh
 #------------------------------------------------------------------------------
 # Configuration Options (adjust as needed):
 #------------------------------------------------------------------------------
@@ -184,7 +199,7 @@ timestep_sampler_type: mixed
 
 We provide some scripts to summarize the results of multiple runs.
 
-```py
+```sh
 # Enter a number to choose the EXP you want to summary
 # e.g., `1` corresponds to the results in `results/EXP1/`.
 # It will summary all tasks under `results/<EXP>/`(include run 0~4)
@@ -218,12 +233,12 @@ python download_ckpt.py
 Then you can run the evaluation script with the inference strategy you want.
 
 ```console
-python eval.py -c results/L1FLOW/pusht/run_0 -i L1Flow -n 2 -t 0.5 -d cuda:0
+python eval.py -c results/L1FLOW/pusht/run_0/checkpoints -i L1Flow -n 2 -t 0.5 -d cuda:0
 ```
 
 This will generate the following directory structure in `{ckpt_dir}/eval_logs/`
 
-You can check `eval_log_L1Flow_t_0.5.json` to see the eval results. The format is as follows:
+You can check `eval_log_L1Flow_t_0.5.yaml` to see the eval results. The format is as follows:
 
 ```console
 {

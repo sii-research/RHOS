@@ -29,7 +29,7 @@ for run_id in RUN_ids:
             strategy_name = f"FM_NFE{num_inference_steps}"
 
         task_id = f"{task_name}{EXP_id}_{strategy_name}_{run_id}"
-        ckpt_dir = f"results/EXP{EXP_id}/{task_name}/run_{run_id}"
+        ckpt_dir = f"results/EXP{EXP_id}/{task_name}/run_{run_id}/checkpoints"
 
         cmd = [
             "python", "eval.py",
@@ -53,4 +53,4 @@ with open(output_path, "w") as f:
     for t in task_list:
         f.write(json.dumps(t) + "\n")
 
-print(f"✅ Generated {len(task_list)} tasks in L1FLOW/TASKS/EVAL{EXP_id}.jsonl")
+print(f"✅ Generated {len(task_list)} tasks in TASKS/EVAL{EXP_id}.jsonl")
