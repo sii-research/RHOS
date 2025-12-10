@@ -99,11 +99,9 @@ The result directory `results/EXP1/pusht/run_0` structure:
 └── train.log
 ```
 
-<a id="sec-multi-task"></a>
-
 ## ⭐ 3. Generate Multi-task (Recommended)
 
-For convenience, we provide a script `TASKS/generate_exp1.py` for generating multi-task training configurations. You can modify the task list and configuration options in this script. The detailed configuration options are shown in Section 4. Configuration.
+For convenience, we provide a script `TASKS/generate_exp1.py` for generating multi-task training configurations. You can modify the task list and configuration options in this script. The detailed configuration options are shown in **Section 4. Configuration**.
 
 ```console
 python TASKS/generate_exp1.py
@@ -132,29 +130,71 @@ python task_worker.py --gpu_nums 2
 python task_worker_single.py --gpu_id 0
 ```
 
-## 4. Summary Results
+## 4. Configuration
+
+We provide several configuration options for the L1Flow policy in the YAML files under the `yamls/` directory. You can modify them according to your needs.
+
+We suggest modifying these parameters in the generation script `TASKS/generate_exp1.py`, which will change the configuration through override, instead of directly modifying them in the YAML files.
+
+```yaml
+---
+#------------------------------------------------------------------------------
+# Configuration Options (adjust as needed):
+#------------------------------------------------------------------------------
+
+# infer_strategy: Inference strategy.
+#   - "L1Flow": (recommended) Our proposed two-step inference method.
+#   - "FM":     Standard flow-matching inference, i.e., Euler integration over [0,1].
+infer_strategy: L1Flow
+
+# num_inference_steps: Number of inference steps.
+#   - Only effective for in `FM`.
+#   - Ignored in "L1Flow", which uses a fixed two-step inference process.
+num_inference_steps: 2
+
+# t_first: Initial time point for the first inference step.
+#   - Only used in "L1Flow".
+#   - Recommended value: 0.5.
+t_first: 0.5
+
+# loss_type: Type of loss function.
+#   - Options: "l1" (recommended) or "mse".
+loss_type: l1
+
+# loss_space: Target loss space for supervision.
+#   - Options: "sample" (default) or "velocity".
+loss_space: sample
+
+# timestep_sampler_type: Timesteps sampling strategy
+#   - Options: "uniform", "beta", or "mixed" (recommended for balanced coverage).
+timestep_sampler_type: mixed
+#------------------------------------------------------------------------------
+```
+
+## 5. Summary Results
 
 We provide some scripts to summarize the results of multiple runs.
 
 ```py
 # Enter a number to choose the EXP you want to summary
 # e.g., `1` corresponds to the results in `results/EXP1/`.
-# It will summary all tasks under `results/<EXP>/`
+# It will summary all tasks under `results/<EXP>/`(include run 0~4)
 python summary_exp.py
 
-# 1. Enter a number to choose the EXP you want to summary
-# 2. Enter a number to choose the task you want to summary
-# It will summary the choosen task under `results/<EXP>/`
+# First, enter a number to choose the EXP you want to summary
+# Then, enter a number to choose the task you want to summary
+# It will summary the choosen task under `results/<EXP>/`(include run 0~4)
 python summary_task.py
 
-# Enter a number to choose the task you want to summary
-# It will summary all runs under `results/<EXP>/<task>/`
+# First, enter a number to choose the EXP you want to summary, `-1` means all EXPs
+# Then, enter a number to choose the task you want to summary
+# It will summary all runs under `results/<EXP>/<task>/`(include all runs)
 python summary_task_all.py
 ```
 
-## 5. Evaluate Pre-trained Checkpoints
+## 6. Evaluate Pre-trained Checkpoints
 
-**⚠️ We do _not recommend_ using this method to determine the performance of the policy, as there is a problem of inconsistent training and evaluation results, which can be seen in this [issue](https://github.com/real-stanford/diffusion_policy/issues/124).**
+**⚠️ We do _not recommend_ using this method to determine the performance of the policy**, as there is a problem of inconsistent training and evaluation results, which can be seen in this [issue](https://github.com/real-stanford/diffusion_policy/issues/124). The reason may be that the evaluation settings are different from those during training(e.g., the ramdon seed on every environment) .
 
 We provide pre-trained checkpoints for evaluation on the Robomimic benchmark, you can download them from [huggingface](https://huggingface.co/datasets/THyanNK/L1FLOW/tree/main/results).
 
@@ -192,7 +232,7 @@ metrics:
 }
 ```
 
-We also provide scripts to generate multi eval tasks. We also provide scripts to generate multiple evaluation tasks. You can use them just like the [multi-task training setup (**Section 3**)](#multi-task).
+We also provide scripts to generate multi eval tasks. You can use them just like the **Section 3. Generate Multi-task**.
 
 ```console
 python TASKS/generate_eval1.py
