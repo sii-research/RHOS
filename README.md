@@ -1,4 +1,3 @@
-# RHOS
-We study Embodied AI, Physical Reasoning, and Human Activity Understanding. We are building a knowledge and reasoning-driven system that enables intelligent agents/robots to perceive human activities, reason human behavior logics, learn skills from human activities and interact with the environment.
+# Human-Robot Joint Learning for Efficient Robot Manipulation Skill Acquisition
 
-Homepage: https://mvig-rhos.com
+Homepage: https://mvig-rhos.com/joint_learning
