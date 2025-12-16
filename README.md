@@ -9,7 +9,7 @@
 &nbsp;
 
 
- **💻 GitHub: [LLM_Inception](https://github.com/lihongcs/LLM_Inception)**
+ **💻 GitHub: [lihongcs/LLM_Inception](https://github.com/lihongcs/LLM_Inception)**
 
 
 <div align="center" margin-bottom="6em">
