@@ -1,5 +1,5 @@
 # HAKE-AVA
-**💻 GitHub: [HAKE-AVA](https://github.com/DirtyHarryLYL/HAKE-AVA)**
+**💻 GitHub: [DirtyHarryLYL/HAKE-AVA](https://github.com/DirtyHarryLYL/HAKE-AVA)**
 
 Fine-grained Spatio-Temporal Activity Understanding based on AVA videos. 
 A part of the [HAKE](http://hake-mvig.cn) project.
