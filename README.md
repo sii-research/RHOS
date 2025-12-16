@@ -2,6 +2,8 @@
 
 **Efficient and Scalable Monocular Human-Object Interaction Motion Reconstruction**
 
+**💻 GitHub: [wenboran2002/open4dhoi_code](https://github.com/wenboran2002/open4dhoi_code)**
+
 [![arXiv](https://img.shields.io/badge/arXiv-Paper-b31b1b.svg)](https://arxiv.org/abs/2512.00960)
 [![Project Page](https://img.shields.io/badge/Project-Page-blue)](https://wenboran2002.github.io/open4dhoi/)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset-yellow)](https://huggingface.co/datasets/wenboran2002/Open4DHOI)
