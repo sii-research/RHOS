@@ -1,5 +1,7 @@
 # SIME: Enhancing Policy Self-Improvement with Modal-level Exploration
 
+**💻 GitHub: [EricJin2002/SIME](https://github.com/EricJin2002/SIME)**
+
 [[Project page]](https://ericjin2002.github.io/SIME/) [[Paper]](https://arxiv.org/abs/2505.01396) [[Code]](https://github.com/EricJin2002/SIME)
 
 ![](media/teaser.svg)
