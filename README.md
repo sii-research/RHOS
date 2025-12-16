@@ -5,6 +5,8 @@
 <h1 align="center">🤖 RoboHiMan</h1>
 <h3 align="center">A Hierarchical Evaluation Paradigm for Compositional Generalization in Long-Horizon Manipulation</h3>
 
+**💻 GitHub: [chenyt31/RoboHiMan](https://github.com/chenyt31/RoboHiMan)**
+
 <p align="center">
   <a href="https://chenyt31.github.io/robo-himan.github.io/">🌐 Website</a> •
   <a href="https://arxiv.org/abs/2510.13149">📄 Paper</a> •
