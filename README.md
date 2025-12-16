@@ -1,5 +1,7 @@
 # exUMI
 
+**💻 GitHub: [silicx/exUMI](https://github.com/silicx/exUMI)**
+
 [[Project page]](https://silicx.github.io/exUMI/)
 [[Paper]](https://arxiv.org/abs/2509.14688)
 [[Code]](https://github.com/silicx/exUMI/tree/main)
