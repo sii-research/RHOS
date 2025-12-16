@@ -1,5 +1,7 @@
 # [ImDy: Human Inverse Dynamics from Imitated Observations](https://foruck.github.io/ImDy/) (ICLR 2025) 
 
+**💻 GitHub: [Foruck/ImDy](https://github.com/Foruck/ImDy)**
+
 The code release is in progress.
 
 ## Environment Setup
