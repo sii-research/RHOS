@@ -1,6 +1,6 @@
 # Reconstructing In-the-Wild Open-Vocabulary Human-Object Interactions
 
-
+**💻 GitHub: [wenboran2002/open-3dhoi](https://github.com/wenboran2002/open-3dhoi)**
 
 ## [Project Page](https://wenboran2002.github.io/3dhoi/) &nbsp;|&nbsp; [Paper](https://arxiv.org/abs/2503.15898) 
 
@@ -90,3 +90,4 @@ you can see the results in /HOIGaussian/output/
       url={https://arxiv.org/abs/2503.15898},
 }
 ```
+
