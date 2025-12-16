@@ -8,9 +8,9 @@
 </h3>
 &nbsp;
 
-<h3 align="center">
- **GitHub: [LLM_Inception](https://github.com/lihongcs/LLM_Inception)**
-</h3>
+
+ **💻 GitHub: [LLM_Inception](https://github.com/lihongcs/LLM_Inception)**
+
 
 <div align="center" margin-bottom="6em">
 <a target="_blank" href="https://github.com/lihong2303">Hong Li</a>,
