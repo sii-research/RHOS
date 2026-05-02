@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+*.log
+
+.env
+.venv/
+env/
+venv/
+
+/data
+/output
+/output_read
+/tmp
+
+# Model weights are distributed through Hugging Face, not this git repo.
+/checkpoints/**/*.ckpt
+
+.claude/
+.codex/
+.cursorignore
+.cursorindexingignore
